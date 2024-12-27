@@ -14,7 +14,18 @@ useHead({
     }
 })
 
-const { data, refresh } = await useFetch<IUploadedFiles[]>('/api/files')
+// Tornar os dados reativos
+const uploadedFiles = ref<IUploadedFiles[]>([])
+
+async function fetchFiles() {
+    const { data } = await useFetch<IUploadedFiles[]>('/api/files')
+    if (data.value) {
+        uploadedFiles.value = data.value
+    }
+}
+
+// Inicializar os dados
+await fetchFiles()
 
 const onDropZone = ref<HTMLDivElement>()
 const { files } = useDropZone(onDropZone, { onDrop })
@@ -38,7 +49,7 @@ async function onDrop() {
                 method: 'POST',
                 body: formData
             })
-            refresh()
+            await fetchFiles()
         }
     }    
 }
@@ -51,7 +62,7 @@ async function handleDelete(id: string, fileName: string) {
             fileName
         }
     })
-    refresh()
+    await fetchFiles()
 }
 
 const { open, onChange } = useFileDialog()
@@ -70,18 +81,16 @@ onChange(async (files) => {
             }
         }
         if (isValid) {            
-            $fetch('/api/upload', {
+            await $fetch('/api/upload', {
                 method: 'POST',
                 body: formData
             })
-            refresh()
+            await fetchFiles()
         }
     }
 })
 
 </script>
-
-
 
 <template>
     <div class="p-6">
@@ -94,7 +103,7 @@ onChange(async (files) => {
         </div>
         <div class="mt-4">
             <div class="text-cyan-700 text-lg">                
-                <div v-for="file in data" :key="file.path">
+                <div v-for="file in uploadedFiles" :key="file.path">
                     <PreviewFiles
                         :file-name="file.fileName"
                         :url="file.path"
@@ -105,7 +114,4 @@ onChange(async (files) => {
             </div>
         </div>
     </div>
-    <!-- <Icon name="mdi:trash-can" style="color: red" /> -->
 </template>
-
-<style scoped lang="css"></style>
